@@ -50,7 +50,6 @@ def inference(
     name,
     voice,
     voice_b,
-    voice_c,
     preset,
     seed,
     regenerate,
@@ -81,8 +80,6 @@ def inference(
     voices = [voice]
     if voice_b != "disabled":
         voices.append(voice_b)
-    if voice_c != "disabled":
-        voices.append(voice_c)
 
     if len(voices) == 1:
         voice_samples, conditioning_latents = load_voice(voice)
@@ -151,23 +148,19 @@ def main():
         label="(Optional) Select second voice:",
         type="value",
     )
-    voice_c = gr.Dropdown(
-        VOICE_OPTIONS,
-        value="disabled",
-        label="(Optional) Select third voice:",
-        type="value",
-    )
     seed = gr.Number(value=0, precision=0, label="Seed (for reproducibility):")
     regenerate = gr.Textbox(
         lines=1,
         label="Comma-separated indices of clips to regenerate [starting from 1]",
     )
+
     split_by_newline = gr.Radio(
         ["Yes", "No"],
         label="Split by newline (If [No], it will automatically try to find relevant splits):",
         type="value",
         value="No",
     )
+
     output_audio = gr.Audio(label="Combined audio:")
     output_text = gr.Textbox(label="Split texts with indices:", lines=10)
 
@@ -179,7 +172,6 @@ def main():
             name,
             voice,
             voice_b,
-            voice_c,
             preset,
             seed,
             regenerate,
