@@ -179,7 +179,7 @@ def main():
         ],
         outputs=[output_audio, output_text],
     )
-    interface.launch(share=True)
+    interface.launch()
 
 
 if __name__ == "__main__":
