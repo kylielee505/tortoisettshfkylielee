@@ -51,12 +51,8 @@ def inference(
     voice_b,
     preset,
     seed,
-    regenerate,
     split_by_newline,
 ):
-    if regenerate.strip() == "":
-        regenerate = None
-    name = "generated.wav"
     if text is None or text.strip() == "":
         with open(script.name) as f:
             text = f.read()
@@ -67,9 +63,6 @@ def inference(
         texts = list(filter(lambda x: x.strip() != "", text.split("\n")))
     else:
         texts = split_and_recombine_text(text)
-
-    if regenerate is not None:
-        regenerate = list(map(int, regenerate.split()))
 
     voices = [voice]
     if voice_b != "disabled":
@@ -117,9 +110,7 @@ def main():
         label="Text (Provide either text, or upload a newline separated text file below):",
     )
     script = gr.File(label="Upload a text file")
-    name = gr.Textbox(
-        lines=1, label="Name of the output file / folder to store intermediate results:"
-    )
+
     preset = gr.Radio(
         ["ultra_fast", "fast", "standard", "high_quality"],
         value="fast",
@@ -136,10 +127,6 @@ def main():
         type="value",
     )
     seed = gr.Number(value=0, precision=0, label="Seed (for reproducibility):")
-    regenerate = gr.Textbox(
-        lines=1,
-        label="Comma-separated indices of clips to regenerate [starting from 1]",
-    )
 
     split_by_newline = gr.Radio(
         ["Yes", "No"],
@@ -160,7 +147,6 @@ def main():
             voice_b,
             preset,
             seed,
-            regenerate,
             split_by_newline,
         ],
         outputs=[output_audio, output_text],
