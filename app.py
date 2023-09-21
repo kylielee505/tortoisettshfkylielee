@@ -47,7 +47,6 @@ VOICE_OPTIONS = [
 def inference(
     text,
     script,
-    name,
     voice,
     voice_b,
     preset,
@@ -57,10 +56,7 @@ def inference(
 ):
     if regenerate.strip() == "":
         regenerate = None
-
-    if name.strip() == "":
-        raise gr.Error("No name provided")
-
+    name = "generated.wav"
     if text is None or text.strip() == "":
         with open(script.name) as f:
             text = f.read()
@@ -71,8 +67,6 @@ def inference(
         texts = list(filter(lambda x: x.strip() != "", text.split("\n")))
     else:
         texts = split_and_recombine_text(text)
-
-    os.makedirs(os.path.join("longform", name), exist_ok=True)
 
     if regenerate is not None:
         regenerate = list(map(int, regenerate.split()))
@@ -90,11 +84,6 @@ def inference(
 
     all_parts = []
     for j, text in enumerate(texts):
-        if regenerate is not None and j + 1 not in regenerate:
-            all_parts.append(
-                load_audio(os.path.join("longform", name, f"{j+1}.wav"), 24000)
-            )
-            continue
         gen = tts.tts_with_preset(
             text,
             voice_samples=voice_samples,
@@ -104,15 +93,13 @@ def inference(
             use_deterministic_seed=seed,
         )
 
-        gen = gen.squeeze(0).cpu()
-        torchaudio.save(os.path.join("longform", name, f"{j+1}.wav"), gen, 24000)
-
-        all_parts.append(gen)
+        audio_ = gen.squeeze(0).cpu()
+        all_parts.append(audio_)
 
     full_audio = torch.cat(all_parts, dim=-1)
 
-    os.makedirs("outputs", exist_ok=True)
-    torchaudio.save(os.path.join("outputs", f"{name}.wav"), full_audio, 24000)
+    # os.makedirs("outputs", exist_ok=True)
+    # torchaudio.save(os.path.join("outputs", f"{name}.wav"), full_audio, 24000)
 
     with open("Tortoise_TTS_Runs_Scripts.log", "a") as f:
         f.write(
@@ -169,7 +156,6 @@ def main():
         inputs=[
             text,
             script,
-            name,
             voice,
             voice_b,
             preset,
