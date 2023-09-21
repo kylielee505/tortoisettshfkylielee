@@ -38,6 +38,7 @@ VOICE_OPTIONS = [
     "kennard",
     "mouse",
     "william",
+    "jane_eyre",
     "random",  # special option for random voice
     "disabled",  # special option for disabled voice
 ]
