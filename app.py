@@ -105,6 +105,8 @@ def inference(
 
 
 def main():
+    title = "Tortoise TTS 🐢"
+    description = "A text-to-speech interface for Tortoise TTS, Strong multi-voice capabilities, Highly realistic prosody and intonation."
     text = gr.Textbox(
         lines=4,
         label="Text (Provide either text, or upload a newline separated text file below):",
@@ -149,6 +151,8 @@ def main():
             seed,
             split_by_newline,
         ],
+        title=title,
+        description=description,
         outputs=[output_audio, output_text],
     )
     interface.launch()
