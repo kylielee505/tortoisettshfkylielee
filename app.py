@@ -106,7 +106,14 @@ def inference(
 
 def main():
     title = "Tortoise TTS 🐢"
-    description = "A text-to-speech interface for Tortoise TTS, Strong multi-voice capabilities, Highly realistic prosody and intonation."
+    description = """
+    A text-to-speech system which powers lot of organizations in Speech synthesis domain.
+    <br/>
+    a model with strong multi-voice capabilities, highly realistic prosody and intonation.
+    <br/>
+    for faster inference, use the 'ultra_fast' preset and duplicate space if you don't want to wait in a queue.
+    <br/>
+    """
     text = gr.Textbox(
         lines=4,
         label="Text (Provide either text, or upload a newline separated text file below):",
