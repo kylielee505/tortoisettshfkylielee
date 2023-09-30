@@ -40,7 +40,6 @@ VOICE_OPTIONS = [
     "william",
     "jane_eyre",
     "random",  # special option for random voice
-    "disabled",  # special option for disabled voice
 ]
 
 
@@ -49,7 +48,6 @@ def inference(
     script,
     voice,
     voice_b,
-    preset,
     seed,
     split_by_newline,
 ):
@@ -81,7 +79,7 @@ def inference(
             text,
             voice_samples=voice_samples,
             conditioning_latents=conditioning_latents,
-            preset=preset,
+            preset="ultra_fast",
             k=1,
             use_deterministic_seed=seed,
         )
@@ -91,12 +89,9 @@ def inference(
 
     full_audio = torch.cat(all_parts, dim=-1)
 
-    # os.makedirs("outputs", exist_ok=True)
-    # torchaudio.save(os.path.join("outputs", f"{name}.wav"), full_audio, 24000)
-
     with open("Tortoise_TTS_Runs_Scripts.log", "a") as f:
         f.write(
-            f"{datetime.now()} | Voice: {','.join(voices)} | Text: {text} | Quality: {preset} | Time Taken (s): {time.time()-start_time} | Seed: {seed}\n"
+            f"{datetime.now()} | Voice: {','.join(voices)} | Text: {text} | Time Taken (s): {time.time()-start_time} | Seed: {seed}\n"
         )
 
     output_texts = [f"({j+1}) {texts[j]}" for j in range(len(texts))]
@@ -120,14 +115,8 @@ def main():
     )
     script = gr.File(label="Upload a text file")
 
-    preset = gr.Radio(
-        ["ultra_fast", "fast", "standard", "high_quality"],
-        value="fast",
-        label="Preset mode (determines quality with tradeoff over speed):",
-        type="value",
-    )
     voice = gr.Dropdown(
-        VOICE_OPTIONS, value="angie", label="Select voice:", type="value"
+        VOICE_OPTIONS, value="jane_eyre", label="Select voice:", type="value"
     )
     voice_b = gr.Dropdown(
         VOICE_OPTIONS,
@@ -154,7 +143,6 @@ def main():
             script,
             voice,
             voice_b,
-            preset,
             seed,
             split_by_newline,
         ],
