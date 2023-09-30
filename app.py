@@ -80,8 +80,7 @@ def inference(
             voice_samples=voice_samples,
             conditioning_latents=conditioning_latents,
             preset="ultra_fast",
-            k=1,
-            use_deterministic_seed=seed,
+            k=1
         )
 
         audio_ = gen.squeeze(0).cpu()
@@ -124,8 +123,6 @@ def main():
         label="(Optional) Select second voice:",
         type="value",
     )
-    seed = gr.Number(value=0, precision=0, label="Seed (for reproducibility):")
-
     split_by_newline = gr.Radio(
         ["Yes", "No"],
         label="Split by newline (If [No], it will automatically try to find relevant splits):",
@@ -143,7 +140,6 @@ def main():
             script,
             voice,
             voice_b,
-            seed,
             split_by_newline,
         ],
         title=title,
