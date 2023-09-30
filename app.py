@@ -33,7 +33,7 @@ VOICE_OPTIONS = [
     "rainbow",
     "tim_reynolds",
     "atkins",
-    "dotrice",
+    "dortice",
     "empire",
     "kennard",
     "mouse",
