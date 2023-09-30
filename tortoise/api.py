@@ -275,9 +275,7 @@ class TextToSpeech:
             for vs in voice_samples:
                 auto_conds.append(format_conditioning(vs, device=self.device))
             auto_conds = torch.stack(auto_conds, dim=1)
-            self.autoregressive = self.autoregressive.to(self.device)
             auto_latent = self.autoregressive.get_conditioning(auto_conds)
-            self.autoregressive = self.autoregressive.cpu()
 
             diffusion_conds = []
             for sample in voice_samples:
@@ -288,9 +286,7 @@ class TextToSpeech:
                 diffusion_conds.append(cond_mel)
             diffusion_conds = torch.stack(diffusion_conds, dim=1)
 
-            self.diffusion = self.diffusion.to(self.device)
             diffusion_latent = self.diffusion.get_conditioning(diffusion_conds)
-            self.diffusion = self.diffusion.cpu()
 
         if return_mels:
             return auto_latent, diffusion_latent, auto_conds, diffusion_conds
@@ -405,22 +401,25 @@ class TextToSpeech:
             calm_token = 83  # This is the token for coding silence, which is fixed in place with "fix_autoregressive_output"
             if verbose:
                 print("Generating autoregressive samples..")
-            codes = self.autoregressive.inference_speech(auto_conditioning, text_tokens,
-                                                        do_sample=True,
-                                                        top_p=top_p,
-                                                        temperature=temperature,
-                                                        num_return_sequences=num_autoregressive_samples,
-                                                        length_penalty=length_penalty,
-                                                        repetition_penalty=repetition_penalty,
-                                                        max_generate_length=max_mel_tokens,
-                                                        **hf_generate_kwargs)
-            # The diffusion model actually wants the last hidden layer from the autoregressive model as conditioning
-            # inputs. Re-produce those for the top results. This could be made more efficient by storing all of these
-            # results, but will increase memory usage.
-            best_latents = self.autoregressive(auto_conditioning.repeat(k, 1), text_tokens.repeat(k, 1),
-                                            torch.tensor([text_tokens.shape[-1]], device=text_tokens.device), codes,
-                                            torch.tensor([codes.shape[-1]*self.autoregressive.mel_length_compression], device=text_tokens.device),
-                                            return_latent=True, clip_inputs=False)
+            with torch.autocast(
+                    device_type="cuda" , dtype=torch.float16, enabled=self.half
+                ):
+                codes = self.autoregressive.inference_speech(auto_conditioning, text_tokens,
+                                                            do_sample=True,
+                                                            top_p=top_p,
+                                                            temperature=temperature,
+                                                            num_return_sequences=num_autoregressive_samples,
+                                                            length_penalty=length_penalty,
+                                                            repetition_penalty=repetition_penalty,
+                                                            max_generate_length=max_mel_tokens,
+                                                            **hf_generate_kwargs)
+                # The diffusion model actually wants the last hidden layer from the autoregressive model as conditioning
+                # inputs. Re-produce those for the top results. This could be made more efficient by storing all of these
+                # results, but will increase memory usage.
+                best_latents = self.autoregressive(auto_conditioning.repeat(k, 1), text_tokens.repeat(k, 1),
+                                                torch.tensor([text_tokens.shape[-1]], device=text_tokens.device), codes,
+                                                torch.tensor([codes.shape[-1]*self.autoregressive.mel_length_compression], device=text_tokens.device),
+                                                return_latent=True, clip_inputs=False)
             del auto_conditioning
 
             if verbose:
