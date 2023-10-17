@@ -25,17 +25,17 @@ from tortoise.utils.tokenizer import VoiceBpeTokenizer
 from tortoise.utils.wav2vec_alignment import Wav2VecAlignment
 from contextlib import contextmanager
 from tortoise.models.stream_generator import init_stream_support
-# from huggingface_hub import hf_hub_download
+from huggingface_hub import hf_hub_download
 pbar = None
 init_stream_support()
 DEFAULT_MODELS_DIR = os.path.join(os.path.expanduser('~'), '.cache', 'tortoise', 'models')
 MODELS_DIR = os.environ.get('TORTOISE_MODELS_DIR', DEFAULT_MODELS_DIR)
 
 MODELS = {
-    'autoregressive.pth': 'https://huggingface.co/Manmay/tortoise-tts/blob/main/autoregressive.pth',
-    'classifier.pth': 'https://huggingface.co/Manmay/tortoise-tts/blob/main/classifier.pth',
-    'rlg_auto.pth': 'https://huggingface.co/Manmay/tortoise-tts/blob/main/rlg_auto.pth',
-    'hifidecoder.pth': 'https://huggingface.co/Manmay/tortoise-tts/blob/main/hifidecoder.pth',
+    'autoregressive.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/autoregressive.pth',
+    'classifier.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/classifier.pth',
+    'rlg_auto.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/rlg_auto.pth',
+    'hifidecoder.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/hifidecoder.pth',
 }
 
 def download_models(specific_models=None):
