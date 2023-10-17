@@ -73,31 +73,23 @@ def inference(
 
     start_time = time.time()
 
-    all_parts = []
+    # all_parts = []
     for j, text in enumerate(texts):
-        gen = tts.tts_with_preset(
+        for audio_frame in tts.tts_with_preset(
             text,
             voice_samples=voice_samples,
             conditioning_latents=conditioning_latents,
             preset="ultra_fast",
             k=1
-        )
+        ):
+            # print("Time taken: ", time.time() - start_time)
+            # all_parts.append(audio_frame)
+            yield (24000, audio_frame.cpu().detach().numpy())
 
-        audio_ = gen.squeeze(0).cpu()
-        all_parts.append(audio_)
-
-    full_audio = torch.cat(all_parts, dim=-1)
-
-    with open("Tortoise_TTS_Runs_Scripts.log", "a") as f:
-        f.write(
-            f"{datetime.now()} | Voice: {','.join(voices)} | Text: {text} | Time Taken (s): {time.time()-start_time} | Seed: {seed}\n"
-        )
-
-    output_texts = [f"({j+1}) {texts[j]}" for j in range(len(texts))]
-
-    return ((24000, full_audio.squeeze().cpu().numpy()), "\n".join(output_texts))
-
-
+    # wav = torch.cat(all_parts, dim=0).unsqueeze(0)
+    # print(wav.shape)
+    # torchaudio.save("output.wav", wav.cpu(), 24000)
+    # yield (None, gr.make_waveform(audio="output.wav",))
 def main():
     title = "Tortoise TTS 🐢"
     description = """
@@ -130,9 +122,8 @@ def main():
         value="No",
     )
 
-    output_audio = gr.Audio(label="Combined audio:")
-    output_text = gr.Textbox(label="Split texts with indices:", lines=10)
-
+    output_audio = gr.Audio(label="streaming audio:", streaming=True, autoplay=True)
+    # download_audio = gr.Audio(label="dowanload audio:")
     interface = gr.Interface(
         fn=inference,
         inputs=[
@@ -144,9 +135,9 @@ def main():
         ],
         title=title,
         description=description,
-        outputs=[output_audio, output_text],
+        outputs=[output_audio],
     )
-    interface.launch()
+    interface.queue().launch()
 
 
 if __name__ == "__main__":
