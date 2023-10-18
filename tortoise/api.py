@@ -38,45 +38,13 @@ MODELS = {
     'hifidecoder.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/hifidecoder.pth',
 }
 
-def download_models(specific_models=None):
-    """
-    Call to download all the models that Tortoise uses.
-    """
-    os.makedirs(MODELS_DIR, exist_ok=True)
-
-    def show_progress(block_num, block_size, total_size):
-        global pbar
-        if pbar is None:
-            pbar = progressbar.ProgressBar(maxval=total_size)
-            pbar.start()
-
-        downloaded = block_num * block_size
-        if downloaded < total_size:
-            pbar.update(downloaded)
-        else:
-            pbar.finish()
-            pbar = None
-    for model_name, url in MODELS.items():
-        if specific_models is not None and model_name not in specific_models:
-            continue
-        model_path = os.path.join(MODELS_DIR, model_name)
-        if os.path.exists(model_path):
-            continue
-        print(f'Downloading {model_name} from {url}...')
-        request.urlretrieve(url, model_path, show_progress)
-        # hf_hub_download(repo_id="Manmay/tortoise-tts", filename=model_name, cache_dir=MODELS_DIR)
-        print('Done.')
-
-
 def get_model_path(model_name, models_dir=MODELS_DIR):
     """
     Get path to given model, download it if it doesn't exist.
     """
     if model_name not in MODELS:
         raise ValueError(f'Model {model_name} not found in available models.')
-    model_path = os.path.join(models_dir, model_name)
-    if not os.path.exists(model_path) and models_dir == MODELS_DIR:
-        download_models([model_name])
+    model_path = hf_hub_download(repo_id="Manmay/tortoise-tts", filename=model_name, cache_dir=MODELS_DIR)
     return model_path
 
 
@@ -243,14 +211,14 @@ class TextToSpeech:
             self.autoregressive = UnifiedVoice(max_mel_tokens=604, max_text_tokens=402, max_conditioning_inputs=2, layers=30,
                                           model_dim=1024,
                                           heads=16, number_text_tokens=255, start_text_token=255, checkpointing=False,
-                                          train_solo_embeddings=False).cuda().eval()
+                                          train_solo_embeddings=False).to(self.device).eval()
             self.autoregressive.load_state_dict(torch.load(get_model_path('autoregressive.pth', models_dir)), strict=False)
             self.autoregressive.post_init_gpt2_config(use_deepspeed=use_deepspeed, kv_cache=kv_cache, half=self.half)
 
         self.hifi_decoder = HifiganGenerator(in_channels=1024, out_channels = 1, resblock_type = "1",
         resblock_dilation_sizes = [[1, 3, 5], [1, 3, 5], [1, 3, 5]], resblock_kernel_sizes = [3, 7, 11],
         upsample_kernel_sizes = [16, 16, 4, 4], upsample_initial_channel = 512, upsample_factors = [8, 8, 2, 2],
-        cond_channels=1024).cuda().eval()
+        cond_channels=1024).to(self.device).eval()
         hifi_model = torch.load(get_model_path('hifidecoder.pth'))
         self.hifi_decoder.load_state_dict(hifi_model, strict=False)
         # Random latent generators (RLGs) are loaded lazily.
@@ -309,7 +277,7 @@ class TextToSpeech:
         settings.update(kwargs) # allow overriding of preset settings with kwargs
         for audio_frame in self.tts(text, **settings):
             yield audio_frame
-
+    
     def handle_chunks(self, wav_gen, wav_gen_prev, wav_overlap, overlap_len):
         """Handle chunk formatting in streaming mode"""
         wav_chunk = wav_gen[:-overlap_len]
@@ -413,7 +381,7 @@ class TextToSpeech:
             wav_gen_prev = None
             wav_overlap = None
             is_end = False
-            first_buffer = 60
+            first_buffer = 40
             while not is_end:
                 try:
                     with torch.autocast(
@@ -428,7 +396,7 @@ class TextToSpeech:
                 if is_end or (stream_chunk_size > 0 and len(codes_) >= max(stream_chunk_size, first_buffer)):
                     first_buffer = 0
                     gpt_latents = torch.cat(all_latents, dim=0)[None, :]
-                    wav_gen = self.hifi_decoder.inference(gpt_latents.cuda(), auto_conditioning)
+                    wav_gen = self.hifi_decoder.inference(gpt_latents.to(self.device), auto_conditioning)
                     wav_gen = wav_gen.squeeze()
                     wav_chunk, wav_gen_prev, wav_overlap = self.handle_chunks(
                         wav_gen.squeeze(), wav_gen_prev, wav_overlap, overlap_wav_len
