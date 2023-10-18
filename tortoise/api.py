@@ -219,7 +219,7 @@ class TextToSpeech:
         resblock_dilation_sizes = [[1, 3, 5], [1, 3, 5], [1, 3, 5]], resblock_kernel_sizes = [3, 7, 11],
         upsample_kernel_sizes = [16, 16, 4, 4], upsample_initial_channel = 512, upsample_factors = [8, 8, 2, 2],
         cond_channels=1024).to(self.device).eval()
-        hifi_model = torch.load(get_model_path('hifidecoder.pth'))
+        hifi_model = torch.load(get_model_path('hifidecoder.pth'), map_location=torch.device(self.device))
         self.hifi_decoder.load_state_dict(hifi_model, strict=False)
         # Random latent generators (RLGs) are loaded lazily.
         self.rlg_auto = None
