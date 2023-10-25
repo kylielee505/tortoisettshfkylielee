@@ -277,20 +277,39 @@ class TextToSpeech:
         settings.update(kwargs) # allow overriding of preset settings with kwargs
         for audio_frame in self.tts(text, **settings):
             yield audio_frame
-    
-    def handle_chunks(self, wav_gen, wav_gen_prev, wav_overlap, overlap_len):
-        """Handle chunk formatting in streaming mode"""
+    def handle_chunks(
+        self,
+        wav_gen: torch.Tensor,
+        wav_gen_prev: torch.Tensor,
+        wav_overlap: torch.Tensor,
+        overlap_len: int
+    ) -> tuple:
+        """
+        Handle chunk formatting in streaming mode.
+        """
+        # Extract the current chunk without overlap
         wav_chunk = wav_gen[:-overlap_len]
+    
+        # If there's a previous chunk, extract the portion that's not overlapping
         if wav_gen_prev is not None:
             wav_chunk = wav_gen[(wav_gen_prev.shape[0] - overlap_len) : -overlap_len]
+    
+        # Perform the crossfade if there is an overlap
         if wav_overlap is not None:
-            crossfade_wav = wav_chunk[:overlap_len]
-            crossfade_wav = crossfade_wav * torch.linspace(0.0, 1.0, overlap_len).to(crossfade_wav.device)
-            wav_chunk[:overlap_len] = wav_overlap * torch.linspace(1.0, 0.0, overlap_len).to(wav_overlap.device)
+            crossfade_window = torch.linspace(0.0, 1.0, overlap_len).to(wav_gen.device)
+            
+            crossfade_wav = wav_chunk[:overlap_len] * crossfade_window
+            wav_chunk[:overlap_len] = wav_overlap * (1 - crossfade_window)
             wav_chunk[:overlap_len] += crossfade_wav
+    
+        # Save the last part of this chunk for overlapping with the next chunk
         wav_overlap = wav_gen[-overlap_len:]
+    
+        # Update wav_gen_prev for the next iteration
         wav_gen_prev = wav_gen
+    
         return wav_chunk, wav_gen_prev, wav_overlap
+
 
 
     def tts(self, text, voice_samples=None, conditioning_latents=None, k=1, verbose=True, use_deterministic_seed=None,
