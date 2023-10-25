@@ -296,11 +296,16 @@ class TextToSpeech:
     
         # Perform the crossfade if there is an overlap
         if wav_overlap is not None:
-            crossfade_window = torch.linspace(0.0, 1.0, overlap_len).to(wav_gen.device)
+            # Using a Hanning window for smoother transition
+            crossfade_window = torch.hann_window(overlap_len).to(wav_gen.device)
             
-            crossfade_wav = wav_chunk[:overlap_len] * crossfade_window
-            wav_chunk[:overlap_len] = wav_overlap * (1 - crossfade_window)
-            wav_chunk[:overlap_len] += crossfade_wav
+            # Equal-power crossfade
+            crossfade_wav = torch.sqrt(crossfade_window) * wav_chunk[:overlap_len]
+            wav_overlap = torch.sqrt(1 - crossfade_window) * wav_overlap
+    
+            # Overlap-Add (OLA) for merging audio chunks
+            wav_chunk[:overlap_len] = F.pad(wav_overlap, (0, wav_chunk[:overlap_len].shape[0] - wav_overlap.shape[0])) + \
+                                      F.pad(crossfade_wav, (0, wav_chunk[:overlap_len].shape[0] - crossfade_wav.shape[0]))
     
         # Save the last part of this chunk for overlapping with the next chunk
         wav_overlap = wav_gen[-overlap_len:]
