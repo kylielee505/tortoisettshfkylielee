@@ -1,6 +1,6 @@
 ---
 title: Tortoise Tts
-emoji: 🐠
+emoji: 🐢
 colorFrom: gray
 colorTo: gray
 sdk: gradio
